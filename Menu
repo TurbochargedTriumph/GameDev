@@ -7,5 +7,65 @@ clock = pygame.time.Clock()
 background_image = pygame.image.load('images/gamebg.jpeg')
 
 
+import pygame.mixer
+from ursina import *
+
+class MyNewGame(Ursina):
+    def __init__(self):
+        super().__init__()
+        # Настройки игры (параметры, звук и т.д.)
+        self.setup_game()
+
+    def setup_game(self):
+        # Создание игровых объектов
+        self.create_objects()
+
+    def create_objects(self):
+        # Создание машины, дороги, врагов и других объектов
+        self.car = Car()
+        self.road1 = Road(z=1)
+        self.road2 = Road(z=1, y=15)
+        self.pair = [self.road1, self.road2]
+        self.enemies = []
+        # Другие игровые объекты
+
+    def handle_collisions(self):
+        # Обработка столкновений
+        pass
+
+    def update(self):
+        # Обновление состояния игры на каждом кадре
+        pass
+
+class Car(Entity):
+    def __init__(self, **kwargs):
+        # Описание машины
+        pass
+
+    def update(self):
+        # Обновление позиции машины
+        pass
+
+class Road(Entity):
+    def __init__(self, **kwargs):
+        # Описание дороги
+        pass
+
+    def update(self):
+        # Обновление позиции дороги
+        pass
+
+class Enemy(Entity):
+    def __init__(self, **kwargs):
+        # Описание врага
+        pass
+
+    def update(self):
+        # Обновление позиции врага
+        pass
+
+if __name__ == '__main__':
+    app = MyNewGame()
+    app.run()
 
 
