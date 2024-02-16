@@ -1,0 +1,169 @@
+import pygame
+from ursina import *
+
+
+class Game:
+    def __init__(self):
+        self.app = Ursina()
+        self.camera_setup()
+        pygame.mixer.init()
+        pygame.mixer.music.load('assets/noplaynogay.mp3')
+        pygame.mixer.music.play(-1)
+
+        pygame.init()
+        self.screen = pygame.display.set_mode((900, 600))
+        pygame.display.set_caption("A-class: Turbocharged Triumph")
+        icon = pygame.image.load('assets/aclassgame.webp')
+        pygame.display.set_icon(icon)
+        self.font = pygame.font.Font('assets/ProtestGuerrilla-Regular.ttf', 40)
+        self.text_surface = self.font.render('A-class: Turbocharged Triumph', True, (64, 58, 43))
+        self.bg = pygame.image.load('assets/gamebg.jpeg')
+        self.menu_active = True
+
+        self.start_button = Button(400, 300, 100, 50, 'Start', (0, 0, 255), (0, 0, 150), action=self.start_game)
+        self.lives = 3
+        self.invulnerable = False
+        self.car = Car()
+        self.road1 = Road(15)
+        self.road2 = Road(15, y=15)
+        self.pair = [self.road1, self.road2]
+        self.enemies = []
+
+        self.app.run()
+
+    def camera_setup(self):
+        camera.ortho = True
+        camera.fov = 40
+
+    def start_game(self):
+        self.menu_active = False
+
+    def game_over(self):
+        game_over_text = Text(text='Game Over', origin=(0, 0), y=-.4, color=color.black)
+        game_over_text.enabled = True
+        self.app.paused = True
+        invoke(self.app.quit, delay=5)
+
+    def handle_collisions(self):
+        collision_this_frame = False
+        for enemy in self.enemies:
+            if self.car.intersects(enemy).hit and not collision_this_frame and not self.invulnerable:
+                self.car.shake()
+                self.lives -= 1
+                if self.lives == 0:
+                    self.game_over()
+                self.invulnerable = True
+                invoke(self.set_invulnerable_false, delay=1.5)
+                collision_this_frame = True
+        #         return
+        # collision_this_frame = False
+
+    def set_invulnerable_false(self):
+        self.invulnerable = False
+
+    def update(self):
+        self.car_movement()
+        self.move_roads()
+        self.move_enemies()
+        self.handle_collisions()
+        if self.invulnerable:
+            self.car.color = color.blue
+        else:
+            self.car.color = color.white
+
+    def car_movement(self):
+        self.car.move()
+
+    def move_roads(self):
+        for road in self.pair:
+            road.move()
+
+    def move_enemies(self):
+        for enemy in self.enemies:
+            enemy.move()
+
+
+class Car(Entity):
+    def __init__(self):
+        super().__init__(
+            model='quad',
+            texture='assets/car2.png',
+            collider='box',
+            scale=(2, 1),
+            rotation_z=-90
+        )
+
+    def move(self):
+        self.x -= held_keys['a'] * 5 * time.dt
+        self.x += held_keys['d'] * 5 * time.dt
+        if held_keys['w']:
+            if self.y + 5 * time.dt <= 10:
+                self.y += 5 * time.dt
+        if held_keys['s']:
+            if self.y - 6 * time.dt >= -10:
+                self.y -= 6 * time.dt
+
+
+class Road(Entity):
+    def __init__(self, scale, y=0):
+        super().__init__(
+            model='quad',
+            texture='assets/roadnew1.png',
+            scale=scale,
+            z=1,
+            y=y
+        )
+
+    def move(self):
+        self.y -= 6 * time.dt
+        if self.y < -15:
+            self.y += 30
+
+
+class Enemy(Entity):
+    def __init__(self, val):
+        super().__init__(
+            model='quad',
+            texture='assets/car3.png',
+            x=2 * val,
+            y=25,
+            color=color.random_color(),
+            rotation_z=90 if val < 0 else -90
+        )
+
+    def move(self):
+        if self.x < 0:
+            self.y -= 10 * time.dt
+        else:
+            self.y -= 5 * time.dt
+        if self.y < -10:
+            game.enemies.remove(self)
+            destroy(self)
+
+
+class Button:
+    def __init__(self, x, y, width, height, text, color, hover_color, action=None):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.text = text
+        self.color = color
+        self.hover_color = hover_color
+        self.action = action
+
+    def draw(self):
+        mouse_pos = pygame.mouse.get_pos()
+        if self.x < mouse_pos[0] < self.x + self.width and self.y < mouse_pos[1] < self.y + self.height:
+            pygame.draw.rect(game.screen, self.hover_color, (self.x, self.y, self.width, self.height))
+            if pygame.mouse.get_pressed()[0] == 1 and self.action:
+                self.action()
+        else:
+            pygame.draw.rect(game.screen, self.color, (self.x, self.y, self.width, self.height))
+
+        text = game.font.render(self.text, True, (255, 255, 255))
+        text_rect = text.get_rect(center=(self.x + self.width // 2, self.y + self.height // 2))
+        game.screen.blit(text, text_rect)
+
+
+game = Game()
